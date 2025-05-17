@@ -1,9 +1,9 @@
 <html>
 <head>
-	<meta charset="UTF-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-	<title>SmileProject</title>
-	<script src="pico.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>SmileProject</title>
+  <script src="pico.js"></script>
 </head>
 <body>
 <h1>SmileProject</h1>
@@ -13,241 +13,253 @@
 <script>
 let initialized = false;
 let self = { 
-	side: 'user',
-	anime: null,
-	classify_region: null,
-	update_memory: null,
-	gray: null,
-	nrows: 0,
-	ncols: 0,
+  side: 'user',
+  anime: null,
+  classify_region: null,
+  update_memory: null,
+  gray: null,
+  nrows: 0,
+  ncols: 0,
 };
 const threshold = 20.0;
 
 // 笑顔を作るために使う座標の差分。
 let smile_delta_coords = [
-	-1, -2, -3, -2, -1, 0, 1, 2, 3, 3, 3, 3, 2, 1, 0, -1, -2, -3, -2, -1
+  -1, -2, -3, -2, -1, 0, 1, 2, 3, 3, 3, 3, 2, 1, 0, -1, -2, -3, -2, -1
 ];
 
 // 笑顔を作るために画像の長方形領域を変形して描画する。
 function draw_smiled_rect(canvas, ctx, rect, sign=+1){
-	let x0 = rect[0], y0 = rect[1];
-	let width = rect[2], height = rect[3];
-	let x1 = x0 + width, y1 = y0 + height;
+  let x0 = rect[0], y0 = rect[1];
+  let width = rect[2], height = rect[3];
+  let x1 = x0 + width, y1 = y0 + height;
 
-	const count = smile_delta_coords.length;
-	for(let x = x0; x < x1; ++x){
-		let i = parseInt((x - x0) / width * count);
-		let delta = smile_delta_coords[i] * sign * height * 0.04;
-		if(0){
-			ctx.fillStyle = "yellow";
-			ctx.fillRect(x, y0, 1, height + delta);
-		}else{
-			ctx.drawImage(canvas,
-				x, y0, 1, height + delta,
-				x, y0 + delta, 1, height + delta);
-		}
-	}
+  const count = smile_delta_coords.length;
+  for(let x = x0; x < x1; ++x){
+    let i = parseInt((x - x0) / width * count);
+    let delta = smile_delta_coords[i] * sign * height * 0.04;
+    if(0){
+      ctx.fillStyle = "yellow";
+      ctx.fillRect(x, y0, 1, height + delta);
+    }else{
+      ctx.drawImage(canvas,
+        x, y0, 1, height + delta,
+        x, y0 + delta, 1, height + delta);
+    }
+  }
+}
+
+// 指定した色で長方形領域を塗りつぶす。
+function draw_rect(ctx, rect, color){
+  ctx.fillStyle = color;
+  ctx.fillRect(rect[0], rect[1], rect[2], rect[3]);
 }
 
 // canvas2にある長方形領域 (x, y, width, height) にある顔を笑顔にして canvas1 に転送する関数。
 function make_smile(canvas1, canvas2, x, y, width, height){
-	let ctx1 = canvas1.getContext('2d', {
-		antialias: false,
-		alpha: false,
-	});
-	let ctx2 = canvas2.getContext('2d', {
-		antialias: false,
-		alpha: false,
-	});
-	ctx1.drawImage(canvas2, 0, 0, width, height, 0, 0, width, height);
+  let ctx1 = canvas1.getContext('2d', {
+    antialias: false,
+    alpha: false,
+  });
+  let ctx2 = canvas2.getContext('2d', {
+    antialias: false,
+    alpha: false,
+  });
+  ctx1.drawImage(canvas2, 0, 0, width, height, 0, 0, width, height);
 
-	// 口の位置。
-	let mouth_rect = [x + width*0.29, y + height*0.72, width * 0.47, height * 0.15 ];
-	// 左眉毛の位置。
-	let left_eyebrow_rect = [ x + width*0.1, y + height*0.32, width * 0.35, height * 0.13 ];
-	// 右眉毛の位置。
-	let right_eyebrow_rect = [ x + width*0.52, y + height*0.32, width * 0.35, height * 0.13 ];
+  // 口の位置。
+  let mouth_rect = [x + width*0.29, y + height*0.72, width * 0.47, height * 0.15 ];
+  // 左眉毛の位置。
+  let left_eyebrow_rect = [ x + width*0.1, y + height*0.32, width * 0.35, height * 0.13 ];
+  // 右眉毛の位置。
+  let right_eyebrow_rect = [ x + width*0.52, y + height*0.32, width * 0.35, height * 0.13 ];
 
-	draw_smiled_rect(canvas2, ctx1, mouth_rect, +1);
-	draw_smiled_rect(canvas2, ctx1, left_eyebrow_rect, -0.7);
-	draw_smiled_rect(canvas2, ctx1, right_eyebrow_rect, -0.7);
+  if(false){
+    draw_rect(ctx1, mouth_rect, "rgba(255, 0, 0, 50%)");
+    draw_rect(ctx1, left_eyebrow_rect, "rgba(0, 192, 0, 50%)");
+    draw_rect(ctx1, right_eyebrow_rect, "rgba(0, 192, 0, 50%)");
+  }else{
+    draw_smiled_rect(canvas2, ctx1, mouth_rect, +1);
+    draw_smiled_rect(canvas2, ctx1, left_eyebrow_rect, -0.7);
+    draw_smiled_rect(canvas2, ctx1, right_eyebrow_rect, -0.7);
+  }
 }
 
 // イメージをグレースケールに変換する。
 function rgba_to_grayscale(rgba, nrows, ncols){
-	if(!self.gray || self.nrows != nrows || self.ncols != ncols){
-		self.gray = new Uint8Array(nrows * ncols);
-		self.nrows = nrows;
-		self.ncols = ncols;
-	}
-	let gray = self.gray;
-	for(let r = 0; r < nrows; ++r){
-		for(let c = 0; c < ncols; ++c){
-			// gray = 0.2*red + 0.7*green + 0.1*blue
-			gray[r*ncols + c] = (2 * rgba[r*4*ncols + 4*c + 0] + 7 * rgba[r*4*ncols + 4*c + 1] + 1 * rgba[r*4*ncols + 4*c + 2]) / 10;
-		}
-	}
-	return gray;
+  if(!self.gray || self.nrows != nrows || self.ncols != ncols){
+    self.gray = new Uint8Array(nrows * ncols);
+    self.nrows = nrows;
+    self.ncols = ncols;
+  }
+  let gray = self.gray;
+  for(let r = 0; r < nrows; ++r){
+    for(let c = 0; c < ncols; ++c){
+      // gray = 0.2*red + 0.7*green + 0.1*blue
+      gray[r*ncols + c] = (2 * rgba[r*4*ncols + 4*c + 0] + 7 * rgba[r*4*ncols + 4*c + 1] + 1 * rgba[r*4*ncols + 4*c + 2]) / 10;
+    }
+  }
+  return gray;
 }
 
 // カメラの制約を取得する関数。
 function getCameraConstraints(){
-	if (self.side == null){
-		return {
-			video: true,
-			audio: false,
-		};
-	}else if (self.side == 'user'){
-		return {
-			video: {
-				facingMode: 'user',
-			},
-			audio: false,
-		};
-	} else {
-		return {
-			video: {
-				facingMode: { exact: 'environment' },
-			},
-			audio: false,
-		};
-	}
+  if (self.side == null){
+    return {
+      video: true,
+      audio: false,
+    };
+  }else if (self.side == 'user'){
+    return {
+      video: {
+        facingMode: 'user',
+      },
+      audio: false,
+    };
+  } else {
+    return {
+      video: {
+        facingMode: { exact: 'environment' },
+      },
+      audio: false,
+    };
+  }
 }
 
 // 顔認識する。
 function get_detections(rgba, width, height){
-	if (!self.classify_region || !self.update_memory)
-		return;
+  if (!self.classify_region || !self.update_memory)
+    return;
 
-	let image = {
-		pixels: rgba_to_grayscale(rgba, height, width),
-		nrows: height,
-		ncols: width,
-		ldim: width
-	};
+  let image = {
+    pixels: rgba_to_grayscale(rgba, height, width),
+    nrows: height,
+    ncols: width,
+    ldim: width
+  };
 
-	let params = {
-		shiftfactor: 0.1, // move the detection window by 10% of its size
-		minsize: 90,     // minimum size of a face
-		maxsize: 1000,    // maximum size of a face
-		scalefactor: 1.1  // for multiscale processing: resize the detection window by 10% when moving to the higher scale
-	};
+  let params = {
+    shiftfactor: 0.1, // move the detection window by 10% of its size
+    minsize: 90,     // minimum size of a face
+    maxsize: 1000,    // maximum size of a face
+    scalefactor: 1.1  // for multiscale processing: resize the detection window by 10% when moving to the higher scale
+  };
 
-	let dets = pico.run_cascade(image, self.classify_region, params);
-	self.dets = dets = self.update_memory(dets);
-	dets = pico.cluster_detections(dets, 0.2); // set IoU threshold to 0.2
-	return dets;
+  let dets = pico.run_cascade(image, self.classify_region, params);
+  self.dets = dets = self.update_memory(dets);
+  dets = pico.cluster_detections(dets, 0.2); // set IoU threshold to 0.2
+  return dets;
 }
 
 let smile_flag = true;
 
 // ターゲットを描画する。
 function draw_target(ctx, target, status){
-	let x = target.x, y = target.y, radius = target.radius;
-	let cx = radius, cy = radius * 1.2;
-	ctx.beginPath();
-	ctx.rect(x - cx, y - cy, cx * 2, cy * 2);
-	ctx.lineWidth = 5;
-	ctx.strokeStyle = '#090';
-	ctx.stroke();
+  let x = target.x, y = target.y, radius = target.radius;
+  let cx = radius, cy = radius * 1.2;
+  ctx.beginPath();
+  ctx.rect(x - cx, y - cy, cx * 2, cy * 2);
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = '#090';
+  ctx.stroke();
 
-	if(smile_flag){
-		make_smile(main_canvas, main_canvas, x - cx, y - cy, 2 * cx, 2 * cy);
-	}
+  if(smile_flag){
+    make_smile(main_canvas, main_canvas, x - cx, y - cy, 2 * cx, 2 * cy);
+  }
 }
 
 // 検出された顔を描画する。
 function draw_detections(ctx, dets){
-	if(!dets)
-		return;
-	for(let det of dets){
-		if(det[3] <= threshold)
-			continue;
+  if(!dets)
+    return;
+  for(let det of dets){
+    if(det[3] <= threshold)
+      continue;
 
-		let x = det[1], y = det[0], radius = det[2] / 2;
-		let target = {x: x, y: y, radius: radius};
-		draw_target(ctx, target, 0);
-	}
+    let x = det[1], y = det[0], radius = det[2] / 2;
+    let target = {x: x, y: y, radius: radius};
+    draw_target(ctx, target, 0);
+  }
 }
 
 // 顔認識。
 function detectFaces(ctx){
-	// pico.js を使用して顔認識を行う
-	let imageData = ctx.getImageData(0, 0, self.canvas.width, self.canvas.height);
-	let dets = get_detections(imageData.data, self.canvas.width, self.canvas.height);
-	draw_detections(ctx, dets);
+  // pico.js を使用して顔認識を行う
+  let imageData = ctx.getImageData(0, 0, self.canvas.width, self.canvas.height);
+  let dets = get_detections(imageData.data, self.canvas.width, self.canvas.height);
+  draw_detections(ctx, dets);
 }
 
 // カメラ映像を加工するメソッド
 function processVideo(){
-	self.ctx.drawImage(self.video, 0, 0, self.canvas.width, self.canvas.height);
+  self.ctx.drawImage(self.video, 0, 0, self.canvas.width, self.canvas.height);
 
-	// ここに加工処理を追加
-	detectFaces(self.ctx);
+  // ここに加工処理を追加
+  detectFaces(self.ctx);
 
-	// 加工された映像を表示
-	if (self.anime)
-		self.anime = requestAnimationFrame(processVideo);
+  // 加工された映像を表示
+  if (self.anime)
+    self.anime = requestAnimationFrame(processVideo);
 }
 
 // カメラが取得できたときの処理。
 function gotCamera(stream){
-	self.video.srcObject = stream;
-	self.video.addEventListener('loadedmetadata', () => {
-		self.canvas.width = self.video.videoWidth;
-		self.canvas.height = self.video.videoHeight;
-		self.anime = requestAnimationFrame(processVideo);
-	});
+  self.video.srcObject = stream;
+  self.video.addEventListener('loadedmetadata', () => {
+    self.canvas.width = self.video.videoWidth;
+    self.canvas.height = self.video.videoHeight;
+    self.anime = requestAnimationFrame(processVideo);
+  });
 }
 
 // カメラを初期化。
 function initCamera(){
-	// カメラとの接続を試みる。
-	navigator.mediaDevices.getUserMedia(getCameraConstraints())
-	.then((stream) => {
-		gotCamera(stream);
-	})
-	.catch((error) => {
-		self.side = null;
-		// もう一度カメラとの接続を試みる。
-		navigator.mediaDevices.getUserMedia(getCameraConstraints())
-		.then((stream) => {
-			gotCamera(stream);
-		})
-		.catch((error) => {
-			console.log('Error accessing the camera:', error);
-		});
-	});
+  // カメラとの接続を試みる。
+  navigator.mediaDevices.getUserMedia(getCameraConstraints())
+  .then((stream) => {
+    gotCamera(stream);
+  })
+  .catch((error) => {
+    self.side = null;
+    // もう一度カメラとの接続を試みる。
+    navigator.mediaDevices.getUserMedia(getCameraConstraints())
+    .then((stream) => {
+      gotCamera(stream);
+    })
+    .catch((error) => {
+      console.log('Error accessing the camera:', error);
+    });
+  });
 }
 
 function main(canvas, video){
-	self.canvas = canvas;
-	self.video = video;
-	self.ctx = canvas.getContext('2d', {
-		antialias: false,
-		alpha: false,
-	});
+  self.canvas = canvas;
+  self.video = video;
+  self.ctx = canvas.getContext('2d', {
+    antialias: false,
+    alpha: false,
+  });
 
-	// カメラの初期化。
-	initCamera();
+  // カメラの初期化。
+  initCamera();
 
-	// Initialize pico.js face detector
-	self.update_memory = pico.instantiate_detection_memory(5); // we will use the detecions of the last 5 frames
-	let cascadeurl = 'https://katahiromz.github.io/face2/facefinder';
-	self.classify_region = null;
-	fetch(cascadeurl).then(function(response){
-		response.arrayBuffer().then(function(buffer){
-			let bytes = new Int8Array(buffer);
-			self.classify_region = pico.unpack_cascade(bytes);
-			console.log('* facefinder loaded');
-		})
-	});
-	
-	canvas.addEventListener('click', function(e){
-		smile_flag = !smile_flag;
-	});
+  // Initialize pico.js face detector
+  self.update_memory = pico.instantiate_detection_memory(5); // we will use the detecions of the last 5 frames
+  let cascadeurl = 'https://katahiromz.github.io/face2/facefinder';
+  self.classify_region = null;
+  fetch(cascadeurl).then(function(response){
+    response.arrayBuffer().then(function(buffer){
+      let bytes = new Int8Array(buffer);
+      self.classify_region = pico.unpack_cascade(bytes);
+      console.log('* facefinder loaded');
+    })
+  });
+  
+  canvas.addEventListener('click', function(e){
+    smile_flag = !smile_flag;
+  });
 
-	initialized = true;
+  initialized = true;
 }
 
 main(main_canvas, video_1);

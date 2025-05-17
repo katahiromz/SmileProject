@@ -10,60 +10,65 @@
 <canvas id="main_canvas" width="112" height="145"></canvas>
 <canvas id="sub_canvas" width="112" height="145" style="display: none;"></canvas>
 <script>
-  // 笑顔を作るために使う座標の差分。
-  let smile_delta_coords = [
-    -1, -2, -3, -2, -1, 0, 1, 2, 3, 3, 3, 3, 2, 1, 0, -1, -2, -3, -2, -1
-  ];
 
-  // 笑顔を作るために画像の長方形領域を変形して描画する。
-  function draw_smiled_rect(canvas, ctx, rect, sign=+1){
-    let x0 = rect[0], y0 = rect[1];
-    let width = rect[2], height = rect[3];
-    let x1 = x0 + width, y1 = y0 + height;
+// 笑顔を作るために使う座標の差分。
+let smile_delta_coords = [
+  -1, -2, -3, -2, -1, 0, 1, 2, 3, 3, 3, 3, 2, 1, 0, -1, -2, -3, -2, -1
+];
 
-    const count = smile_delta_coords.length;
-    for(let x = x0; x < x1; ++x){
-      let i = parseInt((x - x0) / width * count);
-      let delta = smile_delta_coords[i] * sign * height * 0.04;
-      ctx.drawImage(canvas,
-        x, y0, 1, height + delta,
-        x, y0 + delta, 1, height + delta);
-    }
+// 笑顔を作るために画像の長方形領域を変形して描画する。
+function draw_smiled_rect(canvas, ctx, rect, sign=+1){
+  let x0 = rect[0], y0 = rect[1];
+  let width = rect[2], height = rect[3];
+  let x1 = x0 + width, y1 = y0 + height;
+
+  const count = smile_delta_coords.length;
+  for(let x = x0; x < x1; ++x){
+    let i = parseInt((x - x0) / width * count);
+    let delta = smile_delta_coords[i] * sign * height * 0.04;
+    ctx.drawImage(canvas,
+      x, y0, 1, height + delta,
+      x, y0 + delta, 1, height + delta);
   }
+}
 
-  // canvas2にある長方形領域 (x, y, width, height) にある顔を笑顔にして canvas1 に転送する関数。
-  function make_smile(canvas1, canvas2, x, y, width, height){
-    let ctx1 = canvas1.getContext('2d', {
-      antialias: false,
-      alpha: false,
-    });
-    let ctx2 = canvas2.getContext('2d', {
-      antialias: false,
-      alpha: false,
-    });
-    ctx1.drawImage(canvas2, 0, 0, width, height, 0, 0, width, height);
+// 指定した色で長方形領域を塗りつぶす。
+function draw_rect(ctx, rect, color){
+  ctx.fillStyle = color;
+  ctx.fillRect(rect[0], rect[1], rect[2], rect[3]);
+}
 
-    // 口の位置。
-    let mouth_rect = [x + width*0.29, y + height*0.72, width * 0.47, height * 0.15 ];
-    // 左眉毛の位置。
-    let left_eyebrow_rect = [ x + width*0.1, y + height*0.32, width * 0.35, height * 0.13 ];
-    // 右眉毛の位置。
-    let right_eyebrow_rect = [ x + width*0.52, y + height*0.32, width * 0.35, height * 0.13 ];
+// canvas2にある長方形領域 (x, y, width, height) にある顔を笑顔にして canvas1 に転送する関数。
+function make_smile(canvas1, canvas2, x, y, width, height){
+  let ctx1 = canvas1.getContext('2d', {
+    antialias: false,
+    alpha: false,
+  });
+  let ctx2 = canvas2.getContext('2d', {
+    antialias: false,
+    alpha: false,
+  });
+  ctx1.drawImage(canvas2, 0, 0, width, height, 0, 0, width, height);
 
-    ctx1.fillStyle = "rgba(255, 0, 0, 50%)";
-    //ctx1.fillRect(mouth_rect[0], mouth_rect[1], mouth_rect[2], mouth_rect[3]);
+  // 口の位置。
+  let mouth_rect = [x + width*0.29, y + height*0.72, width * 0.47, height * 0.15 ];
+  // 左眉毛の位置。
+  let left_eyebrow_rect = [ x + width*0.1, y + height*0.32, width * 0.35, height * 0.13 ];
+  // 右眉毛の位置。
+  let right_eyebrow_rect = [ x + width*0.52, y + height*0.32, width * 0.35, height * 0.13 ];
 
-    ctx1.fillStyle = "rgba(0, 192, 0, 50%)";
-    //ctx1.fillRect(left_eyebrow_rect[0], left_eyebrow_rect[1], left_eyebrow_rect[2], left_eyebrow_rect[3]);
-
-    ctx1.fillStyle = "rgba(0, 192, 0, 50%)";
-    //ctx1.fillRect(right_eyebrow_rect[0], right_eyebrow_rect[1], right_eyebrow_rect[2], right_eyebrow_rect[3]);
-
+  if(0){
+    draw_rect(ctx1, mouth_rect, "rgba(255, 0, 0, 50%)");
+    draw_rect(ctx1, left_eyebrow_rect, "rgba(0, 192, 0, 50%)");
+    draw_rect(ctx1, right_eyebrow_rect, "rgba(0, 192, 0, 50%)");
+  }else{
     draw_smiled_rect(canvas2, ctx1, mouth_rect, +1);
-    draw_smiled_rect(canvas2, ctx1, left_eyebrow_rect, -1);
-    draw_smiled_rect(canvas2, ctx1, right_eyebrow_rect, -1);
+    draw_smiled_rect(canvas2, ctx1, left_eyebrow_rect, -0.7);
+    draw_smiled_rect(canvas2, ctx1, right_eyebrow_rect, -0.7);
   }
+}
 
+function main(){
   let normal_face = new Image();
   normal_face.onload = function(){
     let width = normal_face.width;
@@ -85,5 +90,9 @@
     make_smile(main_canvas, sub_canvas, 0, 0, width, height);
   };
   normal_face.src = "normal_face.png";
+}
+
+main();
+
 </script>
 </body></html>
