@@ -139,6 +139,8 @@ function get_detections(rgba, width, height){
 	return dets;
 }
 
+let smile_flag = true;
+
 // ターゲットを描画する。
 function draw_target(ctx, target, status){
 	let x = target.x, y = target.y, radius = target.radius;
@@ -149,7 +151,9 @@ function draw_target(ctx, target, status){
 	ctx.strokeStyle = '#090';
 	ctx.stroke();
 
-	make_smile(main_canvas, main_canvas, x - cx, y - cy, 2 * cx, 2 * cy);
+	if(smile_flag){
+		make_smile(main_canvas, main_canvas, x - cx, y - cy, 2 * cx, 2 * cy);
+	}
 }
 
 // 検出された顔を描画する。
@@ -237,6 +241,10 @@ function main(canvas, video){
 			self.classify_region = pico.unpack_cascade(bytes);
 			console.log('* facefinder loaded');
 		})
+	});
+	
+	canvas.addEventListener('click', function(e){
+		smile_flag = !smile_flag;
 	});
 
 	initialized = true;
